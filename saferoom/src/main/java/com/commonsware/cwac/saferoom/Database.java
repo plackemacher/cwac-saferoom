@@ -417,38 +417,50 @@ class Database implements SupportSQLiteDatabase {
 
   /**
    * {@inheritDoc}
-   *
-   * NOTE: Not presently supported, will throw an UnsupportedOperationException
    */
   @Override
   public boolean enableWriteAheadLogging() {
-    // TODO not supported in SQLCipher for Android
-    throw new UnsupportedOperationException("I kinna do it, cap'n!");
-//    return(safeDb.enableWriteAheadLogging());
+    SupportSQLiteStatement statement = null;
+    try {
+      statement = compileStatement("PRAGMA journal_mode=WAL;");
+      String result = statement.simpleQueryForString();
+      return result.equalsIgnoreCase("wal");
+    } finally {
+      try {
+        statement.close();
+      }
+      catch (Exception e) {
+        throw new RuntimeException("Exception attempting to close statement", e);
+      }
+    }
   }
 
   /**
    * {@inheritDoc}
-   *
-   * NOTE: Not presently supported, will throw an UnsupportedOperationException
    */
   @Override
   public void disableWriteAheadLogging() {
-    // TODO not supported in SQLCipher for Android
-    throw new UnsupportedOperationException("I kinna do it, cap'n!");
-//    safeDb.disableWriteAheadLogging();
+    safeDb.rawExecSQL("PRAGMA journal_mode=TRUNCATE;");
   }
 
   /**
    * {@inheritDoc}
-   *
-   * NOTE: Not presently supported, will throw an UnsupportedOperationException
    */
   @Override
   public boolean isWriteAheadLoggingEnabled() {
-    // TODO not supported in SQLCipher for Android
-    throw new UnsupportedOperationException("I kinna do it, cap'n!");
-//    return(safeDb.isWriteAheadLoggingEnabled());
+    SupportSQLiteStatement statement = null;
+    try {
+      statement = compileStatement("PRAGMA journal_mode;");
+      String result = statement.simpleQueryForString();
+      return result.equalsIgnoreCase("wal");
+    } finally {
+      try {
+        statement.close();
+      }
+      catch (Exception e) {
+        throw new RuntimeException("Exception attempting to close statement", e);
+      }
+    }
   }
 
   /**
