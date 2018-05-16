@@ -24,7 +24,6 @@ import android.os.Build;
 import android.support.annotation.RequiresApi;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
-import java.io.IOException;
 
 /**
  * SupportSQLiteOpenHelper implementation that works with SQLCipher for Android
@@ -98,15 +97,11 @@ class Helper implements SupportSQLiteOpenHelper {
 
   /**
    * {@inheritDoc}
-   *
-   * NOTE: Not presently supported, will throw an UnsupportedOperationException
    */
   @Override
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
   public void setWriteAheadLoggingEnabled(boolean enabled) {
-    // TODO not supported in SQLCipher for Android
-    throw new UnsupportedOperationException("I kinna do it, cap'n!");
-//    delegate.setWriteAheadLoggingEnabled(enabled);
+    delegate.setWriteAheadLoggingEnabled(enabled);
   }
 
   /**
@@ -149,6 +144,7 @@ class Helper implements SupportSQLiteOpenHelper {
 
   abstract static class OpenHelper extends SQLiteOpenHelper {
     private Database wrappedDb;
+    private Boolean writeAheadEnabled;
 
     OpenHelper(Context context, String name, int version) {
       super(context, name, null, version, null);
@@ -163,9 +159,32 @@ class Helper implements SupportSQLiteOpenHelper {
     Database getWrappedDb(SQLiteDatabase db) {
       if (wrappedDb==null) {
         wrappedDb=new Database(db);
+        if (writeAheadEnabled != null) {
+          setupWriteAheadLogging(wrappedDb, writeAheadEnabled);
+        }
       }
 
       return(wrappedDb);
+    }
+
+    void setWriteAheadLoggingEnabled(boolean enabled) {
+      writeAheadEnabled = enabled;
+
+      if (wrappedDb != null) {
+        setupWriteAheadLogging(wrappedDb, enabled);
+      }
+    }
+
+    private static void setupWriteAheadLogging(Database db, boolean enabled) {
+      if (db.isReadOnly()) {
+        return;
+      }
+
+      if (enabled) {
+        db.enableWriteAheadLogging();
+      } else {
+        db.disableWriteAheadLogging();
+      }
     }
 
     /**
